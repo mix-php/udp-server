@@ -25,7 +25,7 @@ class UdpServer extends AbstractObject
      * 端口
      * @var int
      */
-    public $port = 9502;
+    public $port = 9504;
 
     /**
      * 应用配置文件
@@ -87,7 +87,7 @@ class UdpServer extends AbstractObject
     public function start()
     {
         // 初始化
-        $this->_server = new \Swoole\WebSocket\Server($this->host, $this->port);
+        $this->_server = new \Swoole\Server($this->host, $this->port, SWOOLE_PROCESS, SWOOLE_SOCK_UDP);
         // 配置参数
         $this->_setting = $this->setting + $this->_setting;
         $this->_server->set($this->_setting);
@@ -108,9 +108,9 @@ class UdpServer extends AbstractObject
 
     /**
      * 主进程启动事件
-     * @param \Swoole\WebSocket\Server $server
+     * @param \Swoole\Server $server
      */
-    public function onStart(\Swoole\WebSocket\Server $server)
+    public function onStart(\Swoole\Server $server)
     {
         // 进程命名
         ProcessHelper::setProcessTitle(static::SERVER_NAME . ": master {$this->host}:{$this->port}");
@@ -118,9 +118,9 @@ class UdpServer extends AbstractObject
 
     /**
      * 管理进程启动事件
-     * @param \Swoole\WebSocket\Server $server
+     * @param \Swoole\Server $server
      */
-    public function onManagerStart(\Swoole\WebSocket\Server $server)
+    public function onManagerStart(\Swoole\Server $server)
     {
         // 进程命名
         ProcessHelper::setProcessTitle(static::SERVER_NAME . ": manager");
@@ -128,10 +128,10 @@ class UdpServer extends AbstractObject
 
     /**
      * 工作进程启动事件
-     * @param \Swoole\WebSocket\Server $server
+     * @param \Swoole\Server $server
      * @param int $workerId
      */
-    public function onWorkerStart(\Swoole\WebSocket\Server $server, int $workerId)
+    public function onWorkerStart(\Swoole\Server $server, int $workerId)
     {
         // 进程命名
         if ($workerId < $server->setting['worker_num']) {
@@ -140,7 +140,7 @@ class UdpServer extends AbstractObject
             ProcessHelper::setProcessTitle(static::SERVER_NAME . ": task #{$workerId}");
         }
         // 实例化App
-        new \Mix\WebSocket\Application(require $this->configFile);
+        new \Mix\Udp\Application(require $this->configFile);
     }
 
     /**
@@ -153,7 +153,7 @@ class UdpServer extends AbstractObject
     {
         if ($this->_setting['enable_coroutine'] && Coroutine::id() == -1) {
             xgo(function () use ($server, $data, $clientInfo) {
-                call_user_func([$this, 'onMessage'], $server, $data, $clientInfo);
+                call_user_func([$this, 'onPacket'], $server, $data, $clientInfo);
             });
             return;
         }
@@ -184,7 +184,7 @@ class UdpServer extends AbstractObject
     protected function welcome()
     {
         $swooleVersion = swoole_version();
-        $phpVersion    = PHP_VERSION;
+        $phpVersion = PHP_VERSION;
         echo <<<EOL
                              _____
 _______ ___ _____ ___   _____  / /_  ____
