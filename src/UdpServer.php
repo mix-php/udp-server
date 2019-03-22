@@ -164,10 +164,7 @@ class UdpServer extends AbstractObject
             \Mix::$app->runPacket(
                 \Mix::$app->udp,
                 $data,
-                new ClientInfo([
-                    'ip'   => $clientInfo['address'],
-                    'port' => $clientInfo['port'],
-                ])
+                $clientInfo
             );
         } catch (\Throwable $e) {
             \Mix::$app->error->handleException($e);
@@ -184,7 +181,7 @@ class UdpServer extends AbstractObject
     protected function welcome()
     {
         $swooleVersion = swoole_version();
-        $phpVersion = PHP_VERSION;
+        $phpVersion    = PHP_VERSION;
         echo <<<EOL
                              _____
 _______ ___ _____ ___   _____  / /_  ____
