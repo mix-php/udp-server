@@ -50,8 +50,6 @@ class UdpServer extends AbstractObject
      * @var array
      */
     protected $_setting = [
-        // 开启自定义握手
-        'enable_handshake' => true,
         // 开启协程
         'enable_coroutine' => true,
         // 主进程事件处理线程数
