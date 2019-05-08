@@ -121,7 +121,7 @@ class UdpServer extends AbstractObject
         // 欢迎信息
         $this->welcome();
         // 执行回调
-        $this->_setting['hook_start'] and call_user_func($this->_setting['hook_start']);
+        $this->_setting['hook_start'] and call_user_func($this->_setting['hook_start'], $this->_server);
         // 启动
         return $this->_server->start();
     }
@@ -149,16 +149,11 @@ class UdpServer extends AbstractObject
             // 进程命名
             ProcessHelper::setProcessTitle(static::SERVER_NAME . ": manager");
             // 执行回调
-            $this->_setting['hook_manager_start'] and call_user_func($this->_setting['hook_manager_start']);
+            $this->_setting['hook_manager_start'] and call_user_func($this->_setting['hook_manager_start'], $server);
 
         } catch (\Throwable $e) {
             // 错误处理
             \Mix::$app->error->handleException($e);
-        } finally {
-            // 清扫组件容器(仅同步模式, 协程会在xgo内清扫)
-            if (!$this->_setting['enable_coroutine']) {
-                \Mix::$app->cleanComponents();
-            }
         }
     }
 
@@ -168,25 +163,14 @@ class UdpServer extends AbstractObject
      */
     public function onManagerStop(\Swoole\Server $server)
     {
-        if ($this->_setting['enable_coroutine'] && Coroutine::id() == -1) {
-            xgo(function () use ($server) {
-                call_user_func([$this, 'onManagerStart'], $server);
-            });
-            return;
-        }
         try {
 
             // 执行回调
-            $this->_setting['hook_manager_stop'] and call_user_func($this->_setting['hook_manager_stop']);
+            $this->_setting['hook_manager_stop'] and call_user_func($this->_setting['hook_manager_stop'], $server);
 
         } catch (\Throwable $e) {
             // 错误处理
             \Mix::$app->error->handleException($e);
-        } finally {
-            // 清扫组件容器(仅同步模式, 协程会在xgo内清扫)
-            if (!$this->_setting['enable_coroutine']) {
-                \Mix::$app->cleanComponents();
-            }
         }
     }
 
@@ -197,12 +181,6 @@ class UdpServer extends AbstractObject
      */
     public function onWorkerStart(\Swoole\Server $server, int $workerId)
     {
-        if ($this->_setting['enable_coroutine'] && Coroutine::id() == -1) {
-            xgo(function () use ($server, $workerId) {
-                call_user_func([$this, 'onWorkerStart'], $server, $workerId);
-            });
-            return;
-        }
         try {
 
             // 进程命名
@@ -212,18 +190,13 @@ class UdpServer extends AbstractObject
                 ProcessHelper::setProcessTitle(static::SERVER_NAME . ": task #{$workerId}");
             }
             // 执行回调
-            $this->_setting['hook_worker_start'] and call_user_func($this->_setting['hook_worker_start']);
+            $this->_setting['hook_worker_start'] and call_user_func($this->_setting['hook_worker_start'], $server);
             // 实例化App
             new \Mix\Udp\Application(require $this->configFile);
 
         } catch (\Throwable $e) {
             // 错误处理
             \Mix::$app->error->handleException($e);
-        } finally {
-            // 清扫组件容器(仅同步模式, 协程会在xgo内清扫)
-            if (!$this->_setting['enable_coroutine']) {
-                \Mix::$app->cleanComponents();
-            }
         }
     }
 
@@ -234,25 +207,14 @@ class UdpServer extends AbstractObject
      */
     public function onWorkerStop(\Swoole\Server $server, int $workerId)
     {
-        if ($this->_setting['enable_coroutine'] && Coroutine::id() == -1) {
-            xgo(function () use ($server, $workerId) {
-                call_user_func([$this, 'onWorkerStart'], $server, $workerId);
-            });
-            return;
-        }
         try {
 
             // 执行回调
-            $this->_setting['hook_worker_stop'] and call_user_func($this->_setting['hook_worker_stop']);
+            $this->_setting['hook_worker_stop'] and call_user_func($this->_setting['hook_worker_stop'], $server);
 
         } catch (\Throwable $e) {
             // 错误处理
             \Mix::$app->error->handleException($e);
-        } finally {
-            // 清扫组件容器(仅同步模式, 协程会在xgo内清扫)
-            if (!$this->_setting['enable_coroutine']) {
-                \Mix::$app->cleanComponents();
-            }
         }
     }
 
@@ -281,13 +243,13 @@ class UdpServer extends AbstractObject
                 $clientInfo
             );
             // 执行回调
-            $this->_setting['hook_packet'] and call_user_func($this->_setting['hook_packet'], true);
+            $this->_setting['hook_packet'] and call_user_func($this->_setting['hook_packet'], true, $server, $clientInfo);
 
         } catch (\Throwable $e) {
             // 错误处理
             \Mix::$app->error->handleException($e);
             // 执行回调
-            $this->_setting['hook_packet'] and call_user_func($this->_setting['hook_packet'], false);
+            $this->_setting['hook_packet'] and call_user_func($this->_setting['hook_packet'], false, $server, $clientInfo);
 
         } finally {
             // 清扫组件容器(仅同步模式, 协程会在xgo内清扫)
