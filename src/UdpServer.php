@@ -148,8 +148,6 @@ class UdpServer extends AbstractObject
 
             // 进程命名
             ProcessHelper::setProcessTitle(static::SERVER_NAME . ": manager");
-            // 实例化App
-            new \Mix\Udp\Application(require $this->configFile);
             // 执行回调
             $this->_setting['event_manager_start'] and call_user_func($this->_setting['event_manager_start']);
 
@@ -213,10 +211,10 @@ class UdpServer extends AbstractObject
             } else {
                 ProcessHelper::setProcessTitle(static::SERVER_NAME . ": task #{$workerId}");
             }
-            // 实例化App
-            new \Mix\Udp\Application(require $this->configFile);
             // 执行回调
             $this->_setting['event_worker_start'] and call_user_func($this->_setting['event_worker_start']);
+            // 实例化App
+            new \Mix\Udp\Application(require $this->configFile);
 
         } catch (\Throwable $e) {
             // 错误处理
