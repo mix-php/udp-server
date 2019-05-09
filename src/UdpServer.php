@@ -5,7 +5,6 @@ namespace Mix\Udp\Server;
 use Mix\Core\Bean\AbstractObject;
 use Mix\Core\Coroutine;
 use Mix\Helper\ProcessHelper;
-use Mix\Udp\ClientInfo;
 
 /**
  * Class UdpServer
