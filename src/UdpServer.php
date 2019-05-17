@@ -65,8 +65,6 @@ class UdpServer extends AbstractObject
         'reload_async'        => true,
         // 退出等待时间
         'max_wait_time'       => 60,
-        // 开启后，PDO 协程多次 prepare 才不会有 40ms 延迟
-        'open_tcp_nodelay'    => true,
         // 进程的最大任务数
         'max_request'         => 0,
         // 主进程启动事件回调
@@ -92,16 +90,10 @@ class UdpServer extends AbstractObject
     ];
 
     /**
-     * 运行参数
-     * @var array
-     */
-    protected $_setting = [];
-
-    /**
      * 服务器
      * @var \Swoole\WebSocket\Server
      */
-    protected $_server;
+    public $server;
 
     /**
      * 启动服务
@@ -110,30 +102,30 @@ class UdpServer extends AbstractObject
     public function start()
     {
         // 初始化
-        $this->_server = new \Swoole\Server($this->host, $this->port, SWOOLE_PROCESS, SWOOLE_SOCK_UDP);
+        $this->server = new \Swoole\Server($this->host, $this->port, SWOOLE_PROCESS, SWOOLE_SOCK_UDP);
         // 配置参数
-        $this->_setting = $this->setting + $this->_defaultSetting;
-        $this->_server->set($this->_setting);
+        $this->setting += $this->_defaultSetting;
+        $this->server->set($this->setting);
         // 覆盖参数
-        $this->_server->set([
+        $this->server->set([
             'enable_coroutine' => false, // 关闭默认协程，回调中有手动开启支持上下文的协程
         ]);
         // 绑定事件
-        $this->_server->on(SwooleEvent::START, [$this, 'onStart']);
-        $this->_server->on(SwooleEvent::SHUTDOWN, [$this, 'onShutdown']);
-        $this->_server->on(SwooleEvent::MANAGER_START, [$this, 'onManagerStart']);
-        $this->_server->on(SwooleEvent::WORKER_ERROR, [$this, 'onWorkerError']);
-        $this->_server->on(SwooleEvent::MANAGER_STOP, [$this, 'onManagerStop']);
-        $this->_server->on(SwooleEvent::WORKER_START, [$this, 'onWorkerStart']);
-        $this->_server->on(SwooleEvent::WORKER_STOP, [$this, 'onWorkerStop']);
-        $this->_server->on(SwooleEvent::WORKER_EXIT, [$this, 'onWorkerExit']);
-        $this->_server->on(SwooleEvent::PACKET, [$this, 'onPacket']);
+        $this->server->on(SwooleEvent::START, [$this, 'onStart']);
+        $this->server->on(SwooleEvent::SHUTDOWN, [$this, 'onShutdown']);
+        $this->server->on(SwooleEvent::MANAGER_START, [$this, 'onManagerStart']);
+        $this->server->on(SwooleEvent::WORKER_ERROR, [$this, 'onWorkerError']);
+        $this->server->on(SwooleEvent::MANAGER_STOP, [$this, 'onManagerStop']);
+        $this->server->on(SwooleEvent::WORKER_START, [$this, 'onWorkerStart']);
+        $this->server->on(SwooleEvent::WORKER_STOP, [$this, 'onWorkerStop']);
+        $this->server->on(SwooleEvent::WORKER_EXIT, [$this, 'onWorkerExit']);
+        $this->server->on(SwooleEvent::PACKET, [$this, 'onPacket']);
         // 欢迎信息
         $this->welcome();
         // 执行回调
-        $this->_setting['hook_start'] and call_user_func($this->_setting['hook_start'], $this->_server);
+        $this->setting['hook_start'] and call_user_func($this->setting['hook_start'], $this->server);
         // 启动
-        return $this->_server->start();
+        return $this->server->start();
     }
 
     /**
@@ -157,7 +149,7 @@ class UdpServer extends AbstractObject
         try {
 
             // 执行回调
-            $this->_setting['hook_shutdown'] and call_user_func($this->_setting['hook_shutdown'], $server);
+            $this->setting['hook_shutdown'] and call_user_func($this->setting['hook_shutdown'], $server);
 
         } catch (\Throwable $e) {
             // 错误处理
@@ -177,7 +169,7 @@ class UdpServer extends AbstractObject
             // 进程命名
             ProcessHelper::setProcessTitle(static::SERVER_NAME . ": manager");
             // 执行回调
-            $this->_setting['hook_manager_start'] and call_user_func($this->_setting['hook_manager_start'], $server);
+            $this->setting['hook_manager_start'] and call_user_func($this->setting['hook_manager_start'], $server);
 
         } catch (\Throwable $e) {
             // 错误处理
@@ -195,7 +187,7 @@ class UdpServer extends AbstractObject
         try {
 
             // 执行回调
-            $this->_setting['hook_worker_error'] and call_user_func($this->_setting['hook_worker_error'], $server, $workerId, $workerPid, $exitCode, $signal);
+            $this->setting['hook_worker_error'] and call_user_func($this->setting['hook_worker_error'], $server, $workerId, $workerPid, $exitCode, $signal);
 
         } catch (\Throwable $e) {
             // 错误处理
@@ -212,7 +204,7 @@ class UdpServer extends AbstractObject
         try {
 
             // 执行回调
-            $this->_setting['hook_manager_stop'] and call_user_func($this->_setting['hook_manager_stop'], $server);
+            $this->setting['hook_manager_stop'] and call_user_func($this->setting['hook_manager_stop'], $server);
 
         } catch (\Throwable $e) {
             // 错误处理
@@ -236,7 +228,7 @@ class UdpServer extends AbstractObject
                 ProcessHelper::setProcessTitle(static::SERVER_NAME . ": task #{$workerId}");
             }
             // 执行回调
-            $this->_setting['hook_worker_start'] and call_user_func($this->_setting['hook_worker_start'], $server);
+            $this->setting['hook_worker_start'] and call_user_func($this->setting['hook_worker_start'], $server);
             // 实例化App
             new \Mix\Udp\Application(require $this->configFile);
 
@@ -256,7 +248,7 @@ class UdpServer extends AbstractObject
         try {
 
             // 执行回调
-            $this->_setting['hook_worker_stop'] and call_user_func($this->_setting['hook_worker_stop'], $server);
+            $this->setting['hook_worker_stop'] and call_user_func($this->setting['hook_worker_stop'], $server);
 
         } catch (\Throwable $e) {
             // 错误处理
@@ -274,7 +266,7 @@ class UdpServer extends AbstractObject
         try {
 
             // 执行回调
-            $this->_setting['hook_worker_exit'] and call_user_func($this->_setting['hook_worker_exit'], $server, $workerId);
+            $this->setting['hook_worker_exit'] and call_user_func($this->setting['hook_worker_exit'], $server, $workerId);
 
         } catch (\Throwable $e) {
             // 错误处理
@@ -290,7 +282,7 @@ class UdpServer extends AbstractObject
      */
     public function onPacket(\Swoole\Server $server, string $data, array $clientInfo)
     {
-        if ($this->_setting['enable_coroutine'] && Coroutine::id() == -1) {
+        if ($this->setting['enable_coroutine'] && Coroutine::id() == -1) {
             xgo(function () use ($server, $data, $clientInfo) {
                 call_user_func([$this, 'onPacket'], $server, $data, $clientInfo);
             });
@@ -307,17 +299,17 @@ class UdpServer extends AbstractObject
                 $clientInfo
             );
             // 执行回调
-            $this->_setting['hook_packet_success'] and call_user_func($this->_setting['hook_packet_success'], $server, $clientInfo);
+            $this->setting['hook_packet_success'] and call_user_func($this->setting['hook_packet_success'], $server, $clientInfo);
 
         } catch (\Throwable $e) {
             // 错误处理
             \Mix::$app->error->handleException($e);
             // 执行回调
-            $this->_setting['hook_packet_error'] and call_user_func($this->_setting['hook_packet_error'], $server, $clientInfo);
+            $this->setting['hook_packet_error'] and call_user_func($this->setting['hook_packet_error'], $server, $clientInfo);
 
         } finally {
             // 清扫组件容器(仅同步模式, 协程会在xgo内清扫)
-            if (!$this->_setting['enable_coroutine']) {
+            if (!$this->setting['enable_coroutine']) {
                 \Mix::$app->cleanComponents();
             }
         }
@@ -345,12 +337,12 @@ EOL;
         println("PHP            Version:   {$phpVersion}");
         println("Swoole         Version:   {$swooleVersion}");
         println('Framework      Version:   ' . \Mix::$version);
-        $this->_setting['max_request'] == 1 and println('Hot            Update:    enabled');
-        $this->_setting['enable_coroutine'] and println('Coroutine      Mode:      enabled');
+        $this->setting['max_request'] == 1 and println('Hot            Update:    enabled');
+        $this->setting['enable_coroutine'] and println('Coroutine      Mode:      enabled');
         println("Listen         Addr:      {$this->host}");
         println("Listen         Port:      {$this->port}");
-        println('Reactor        Num:       ' . $this->_setting['reactor_num']);
-        println('Worker         Num:       ' . $this->_setting['worker_num']);
+        println('Reactor        Num:       ' . $this->setting['reactor_num']);
+        println('Worker         Num:       ' . $this->setting['worker_num']);
         println("Configuration  File:      {$this->configFile}");
     }
 
