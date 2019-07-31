@@ -65,6 +65,9 @@ class UdpServer
         while (true) {
             $peer = null;
             $data = $socket->recvfrom($peer);
+            if ($data === false) {
+                continue;
+            }
             Coroutine::create($this->handle, $socket, $data, $peer);
         }
     }
