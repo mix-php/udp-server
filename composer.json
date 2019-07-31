@@ -1,6 +1,6 @@
 {
   "name": "mix/udp-server",
-  "description": "MixPHP 框架模块 http://www.mixphp.cn",
+  "description": "Mix Udp Server http://www.mixphp.cn",
   "type": "framework",
   "keywords": [
     "framework",
@@ -17,8 +17,7 @@
   ],
   "require": {
     "php": ">=7.0.0",
-    "mix/framework": "v2.1.x-dev",
-    "mix/server": "v2.1.x-dev"
+    "mix/socket": "v2.1.x-dev"
   },
   "autoload": {
     "psr-4": {
