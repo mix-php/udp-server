@@ -2,7 +2,7 @@
 
 namespace Mix\Udp\Server;
 
-use Mix\Socket\Socket;
+use Swoole\Coroutine\Socket;
 use Mix\Concurrent\Coroutine;
 
 /**
