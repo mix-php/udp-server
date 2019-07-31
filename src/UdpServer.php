@@ -65,6 +65,9 @@ class UdpServer
         while (true) {
             $peer = null;
             $data = $socket->recvfrom($peer);
+            if ($socket->errCode == 104) { // shutdown
+                return;
+            }
             if ($data === false) {
                 continue;
             }
