@@ -14,19 +14,19 @@ class UdpServer
 {
 
     /**
-     * @var Socket
-     */
-    public $swooleSocket;
-
-    /**
      * @var string
      */
-    public $host;
+    public $host = '127.0.0.1';
 
     /**
      * @var int
      */
-    public $port;
+    public $port = 9504;
+
+    /**
+     * @var Socket
+     */
+    public $swooleSocket;
 
     /**
      * @var callable
@@ -41,9 +41,9 @@ class UdpServer
      */
     public function __construct(string $host, int $port)
     {
-        $this->swooleSocket = new Socket(AF_INET, SOCK_DGRAM, 0);
         $this->host         = $host;
         $this->port         = $port;
+        $this->swooleSocket = new Socket(AF_INET, SOCK_DGRAM, 0);
     }
 
     /**
