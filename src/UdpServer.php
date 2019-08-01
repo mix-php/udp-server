@@ -16,7 +16,7 @@ class UdpServer
     /**
      * @var Socket
      */
-    public $socket;
+    public $swooleSocket;
 
     /**
      * @var string
@@ -31,7 +31,7 @@ class UdpServer
     /**
      * @var callable
      */
-    protected $handle;
+    protected $handler;
 
     /**
      * UdpServer constructor.
@@ -41,9 +41,9 @@ class UdpServer
      */
     public function __construct(string $host, int $port)
     {
-        $this->socket = new Socket(AF_INET, SOCK_DGRAM, 0);
-        $this->host   = $host;
-        $this->port   = $port;
+        $this->swooleSocket = new Socket(AF_INET, SOCK_DGRAM, 0);
+        $this->host         = $host;
+        $this->port         = $port;
     }
 
     /**
@@ -52,7 +52,7 @@ class UdpServer
      */
     public function handle(callable $callback)
     {
-        $this->handle = $callback;
+        $this->handler = $callback;
     }
 
     /**
@@ -60,7 +60,7 @@ class UdpServer
      */
     public function start()
     {
-        $socket = $this->socket;
+        $socket = $this->swooleSocket;
         $socket->bind($this->host, $this->port);
         while (true) {
             $peer = null;
@@ -71,7 +71,7 @@ class UdpServer
             if ($data === false) {
                 continue;
             }
-            Coroutine::create($this->handle, $socket, $data, $peer);
+            Coroutine::create($this->handler, $socket, $data, $peer);
         }
     }
 
@@ -81,7 +81,7 @@ class UdpServer
      */
     public function shutdown()
     {
-        return $this->socket->close();
+        return $this->swooleSocket->close();
     }
 
 }
