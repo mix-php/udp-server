@@ -2,6 +2,7 @@
 
 namespace Mix\Udp\Server;
 
+use Mix\Udp\Server\Exception\SendException;
 use Swoole\Coroutine\Socket;
 use Mix\Concurrent\Coroutine;
 
@@ -22,6 +23,11 @@ class UdpServer
      * @var int
      */
     public $port = 9504;
+
+    /**
+     * @var array
+     */
+    protected $options = [];
 
     /**
      * @var Socket
@@ -73,6 +79,26 @@ class UdpServer
             }
             Coroutine::create($this->handler, $socket, $data, $peer);
         }
+    }
+
+    /**
+     * Send to
+     * @param string $host
+     * @param int $port
+     * @param string $data
+     * @return bool
+     */
+    public function sendTo(string $host, int $port, string $data)
+    {
+        $len  = strlen($data);
+        $size = $this->swooleSocket->sendTo($host, $port, $data);
+        if ($size === false) {
+            throw new SendException($this->swooleSocket->errMsg, $this->swooleSocket->errCode);
+        }
+        if ($len !== $size) {
+            throw new SendException('The sending data is incomplete, it may be that the socket has been closed by the peer.');
+        }
+        return true;
     }
 
     /**
