@@ -2,6 +2,7 @@
 
 namespace Mix\Udp\Server;
 
+use Mix\Udp\Server\Exception\BindException;
 use Mix\Udp\Server\Exception\SendException;
 use Swoole\Coroutine\Socket;
 use Mix\Concurrent\Coroutine;
@@ -17,7 +18,7 @@ class UdpServer
     /**
      * @var string
      */
-    public $host = '127.0.0.1';
+    public $address = '127.0.0.1';
 
     /**
      * @var int
@@ -41,13 +42,12 @@ class UdpServer
 
     /**
      * UdpServer constructor.
-     * @param Socket $socket
-     * @param string $host
+     * @param string $address
      * @param int $port
      */
-    public function __construct(string $host, int $port)
+    public function __construct(string $address, int $port)
     {
-        $this->host         = $host;
+        $this->address      = $address;
         $this->port         = $port;
         $this->swooleSocket = new Socket(AF_INET, SOCK_DGRAM, 0);
     }
@@ -67,7 +67,10 @@ class UdpServer
     public function start()
     {
         $socket = $this->swooleSocket;
-        $socket->bind($this->host, $this->port);
+        $result = $socket->bind($this->address, $this->port);
+        if (!$result) {
+            throw new BindException($socket->errMsg, $socket->errCode);
+        }
         while (true) {
             $peer = null;
             $data = $socket->recvfrom($peer);
@@ -77,26 +80,26 @@ class UdpServer
             if ($data === false) {
                 continue;
             }
-            Coroutine::create($this->handler, $socket, $data, $peer);
+            Coroutine::create($this->handler, $data, $peer);
         }
     }
 
     /**
-     * Send to
-     * @param string $host
-     * @param int $port
+     * Send
      * @param string $data
+     * @param int $port
+     * @param string $address
      * @return bool
      */
-    public function sendTo(string $host, int $port, string $data)
+    public function send(string $data, int $port, string $address)
     {
         $len  = strlen($data);
-        $size = $this->swooleSocket->sendTo($host, $port, $data);
+        $size = $this->swooleSocket->sendto($address, $port, $data);
         if ($size === false) {
             throw new SendException($this->swooleSocket->errMsg, $this->swooleSocket->errCode);
         }
         if ($len !== $size) {
-            throw new SendException('The sending data is incomplete, it may be that the socket has been closed by the peer.');
+            throw new SendException('The sending data is incomplete for unknown reasons.');
         }
         return true;
     }
