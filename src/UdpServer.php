@@ -16,6 +16,11 @@ class UdpServer
 {
 
     /**
+     * @var int
+     */
+    public $domain = AF_INET;
+
+    /**
      * @var string
      */
     public $address = '127.0.0.1';
@@ -42,14 +47,16 @@ class UdpServer
 
     /**
      * UdpServer constructor.
+     * @param int $domain
      * @param string $address
      * @param int $port
      */
-    public function __construct(string $address, int $port)
+    public function __construct(int $domain, string $address, int $port)
     {
+        $this->domain       = $domain;
         $this->address      = $address;
         $this->port         = $port;
-        $this->swooleSocket = new Socket(AF_INET, SOCK_DGRAM, 0);
+        $this->swooleSocket = new Socket($domain, SOCK_DGRAM, 0);
     }
 
     /**
