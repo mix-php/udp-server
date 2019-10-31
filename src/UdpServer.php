@@ -31,14 +31,9 @@ class UdpServer
     public $port = 9504;
 
     /**
-     * @var array
+     * @var bool
      */
-    protected $options = [];
-
-    /**
-     * @var Socket
-     */
-    public $swooleSocket;
+    public $reusePort = false;
 
     /**
      * @var callable
@@ -46,17 +41,23 @@ class UdpServer
     protected $handler;
 
     /**
+     * @var Socket
+     */
+    public $swooleSocket;
+
+    /**
      * UdpServer constructor.
      * @param int $domain
      * @param string $address
      * @param int $port
+     * @param bool $reusePort
      */
-    public function __construct(int $domain, string $address, int $port)
+    public function __construct(int $domain, string $address, int $port, bool $reusePort = false)
     {
-        $this->domain       = $domain;
-        $this->address      = $address;
-        $this->port         = $port;
-        $this->swooleSocket = new Socket($domain, SOCK_DGRAM, 0);
+        $this->domain    = $domain;
+        $this->address   = $address;
+        $this->port      = $port;
+        $this->reusePort = $reusePort;
     }
 
     /**
@@ -73,7 +74,10 @@ class UdpServer
      */
     public function start()
     {
-        $socket = $this->swooleSocket;
+        $socket = $this->swooleSocket = new Socket($this->domain, SOCK_DGRAM, 0);
+        if ($this->reusePort) {
+            $socket->setOption(SOL_SOCKET, SO_REUSEPORT, true);
+        }
         $result = $socket->bind($this->address, $this->port);
         if (!$result) {
             throw new BindException($socket->errMsg, $socket->errCode);
