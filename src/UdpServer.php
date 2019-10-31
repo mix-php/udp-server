@@ -4,6 +4,7 @@ namespace Mix\Udp\Server;
 
 use Mix\Udp\Server\Exception\BindException;
 use Mix\Udp\Server\Exception\SendException;
+use Mix\Udp\Server\Exception\ShutdownException;
 use Swoole\Coroutine\Socket;
 use Mix\Concurrent\Coroutine;
 
@@ -100,7 +101,6 @@ class UdpServer
      * @param string $data
      * @param int $port
      * @param string $address
-     * @return bool
      */
     public function send(string $data, int $port, string $address)
     {
@@ -112,16 +112,16 @@ class UdpServer
         if ($len !== $size) {
             throw new SendException('The sending data is incomplete for unknown reasons.');
         }
-        return true;
     }
 
     /**
      * Shutdown
-     * @return bool
      */
     public function shutdown()
     {
-        return $this->swooleSocket->close();
+        if (!$this->swooleSocket->close()) {
+            throw new ShutdownException($this->swooleSocket->errMsg, $this->swooleSocket->errCode);
+        }
     }
 
 }
