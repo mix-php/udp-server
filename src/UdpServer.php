@@ -2,9 +2,6 @@
 
 namespace Mix\Udp\Server;
 
-use Mix\Udp\Server\Exception\BindException;
-use Mix\Udp\Server\Exception\SendException;
-use Mix\Udp\Server\Exception\ShutdownException;
 use Swoole\Coroutine\Socket;
 use Mix\Concurrent\Coroutine;
 
@@ -81,7 +78,7 @@ class UdpServer
         }
         $result = $socket->bind($this->address, $this->port);
         if (!$result) {
-            throw new BindException($socket->errMsg, $socket->errCode);
+            throw new \Swoole\Exception($socket->errMsg, $socket->errCode);
         }
         while (true) {
             $peer = null;
@@ -107,10 +104,10 @@ class UdpServer
         $len  = strlen($data);
         $size = $this->swooleSocket->sendto($address, $port, $data);
         if ($size === false) {
-            throw new SendException($this->swooleSocket->errMsg, $this->swooleSocket->errCode);
+            throw new \Swoole\Exception($this->swooleSocket->errMsg, $this->swooleSocket->errCode);
         }
         if ($len !== $size) {
-            throw new SendException('The sending data is incomplete for unknown reasons.');
+            throw new \Swoole\Exception('The sending data is incomplete for unknown reasons.');
         }
     }
 
@@ -128,7 +125,7 @@ class UdpServer
             if ($errMsg == 'Connection reset by peer' && $errCode == 104) {
                 return;
             }
-            throw new ShutdownException($errMsg, $errCode);
+            throw new \Swoole\Exception($errMsg, $errCode);
         }
     }
 
