@@ -120,7 +120,15 @@ class UdpServer
     public function shutdown()
     {
         if (!$this->swooleSocket->close()) {
-            throw new ShutdownException($this->swooleSocket->errMsg, $this->swooleSocket->errCode);
+            $errMsg  = $this->swooleSocket->errMsg;
+            $errCode = $this->swooleSocket->errCode;
+            if ($errMsg == '' && $errCode == 0) {
+                return;
+            }
+            if ($errMsg == 'Connection reset by peer' && $errCode == 104) {
+                return;
+            }
+            throw new ShutdownException($errMsg, $errCode);
         }
     }
 
